@@ -432,13 +432,16 @@ print(
 
 ########################## Creating the GPU system ########################
 # shader is the GPU
-shader = Shader(
-    n_wf=args.wfs_per_simd,
-    clk_domain=SrcClockDomain(
-        clock=args.gpu_clock,
-        voltage_domain=VoltageDomain(voltage=args.gpu_voltage),
-    ),
-)
+shader_list=[]
+for i in range(args.num_gpu):
+    shader = Shader(
+        n_wf=args.wfs_per_simd,
+        clk_domain=SrcClockDomain(
+            clock=args.gpu_clock,
+            voltage_domain=VoltageDomain(voltage=args.gpu_voltage),
+        ),
+    )
+    shader_list.append(shader);
 
 # VIPER GPU protocol implements release consistency at GPU side. So,
 # we make their writes visible to the global memory and should read
@@ -660,14 +663,16 @@ if args.dgpu:
 
 # HSA kernel mode driver
 # dGPUPoolID is 0 because we only have one memory pool
+gpu_list=[]
 for i in range(args.num_gpu):
     gpu_driver = GPUComputeDriver(
         filename="kfd",
         isdGPU=args.dgpu,
         gfxVersion=args.gfx_version,
-        dGPUPoolID=0,
+        dGPUPoolID=i,
         m_type=args.m_type,
     )
+    gpu_list.append(gpu_driver)
 
 renderDriNum = 128
 render_driver = GPURenderDriver(filename=f"dri/renderD{renderDriNum}")
@@ -675,14 +680,15 @@ render_driver = GPURenderDriver(filename=f"dri/renderD{renderDriNum}")
 # Creating the GPU kernel launching components: that is the HSA
 # packet processor (HSAPP), GPU command processor (CP), and the
 # dispatcher.
-gpu_hsapp = HSAPacketProcessor(
-    pioAddr=hsapp_gpu_map_paddr, numHWQueues=args.num_hw_queues
-)
-dispatcher = GPUDispatcher()
-gpu_cmd_proc = GPUCommandProcessor(hsapp=gpu_hsapp, dispatcher=dispatcher)
-gpu_driver.device = gpu_cmd_proc
-shader.dispatcher = dispatcher
-shader.gpu_cmd_proc = gpu_cmd_proc
+for i in range(args.num_gpu):
+    gpu_hsapp = HSAPacketProcessor(
+        pioAddr=hsapp_gpu_map_paddr, numHWQueues=args.num_hw_queues
+    )
+    dispatcher = GPUDispatcher()
+    gpu_cmd_proc = GPUCommandProcessor(hsapp=gpu_hsapp, dispatcher=dispatcher)
+    gpu_list[i].device = gpu_cmd_proc
+    shader_list[i].dispatcher = dispatcher
+    shader_list[i].gpu_cmd_proc = gpu_cmd_proc
 
 
 # Create and assign the workload Check for rel_path in elements of

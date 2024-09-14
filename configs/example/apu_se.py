@@ -80,6 +80,12 @@ parser.add_argument(
     help="Number of GPU Command Processors (CP)",
 )
 parser.add_argument(
+    "--num-gpu",
+    type=int,
+    default=1,
+    help="Number of GPU",
+)
+parser.add_argument(
     "--benchmark-root", help="Root of benchmark directory tree"
 )
 
@@ -654,13 +660,14 @@ if args.dgpu:
 
 # HSA kernel mode driver
 # dGPUPoolID is 0 because we only have one memory pool
-gpu_driver = GPUComputeDriver(
-    filename="kfd",
-    isdGPU=args.dgpu,
-    gfxVersion=args.gfx_version,
-    dGPUPoolID=0,
-    m_type=args.m_type,
-)
+for i in range(args.num_gpu):
+    gpu_driver = GPUComputeDriver(
+        filename="kfd",
+        isdGPU=args.dgpu,
+        gfxVersion=args.gfx_version,
+        dGPUPoolID=0,
+        m_type=args.m_type,
+    )
 
 renderDriNum = 128
 render_driver = GPURenderDriver(filename=f"dri/renderD{renderDriNum}")

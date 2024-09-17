@@ -469,70 +469,73 @@ def createCarrizoTopology(options):
 
     # Populate the topology tree
     # TODO: Just the bare minimum to pass for now
-    node_dir = joinpath(topology_dir, "nodes/0")
-    remake_dir(node_dir)
 
-    # must show valid kaveri gpu id or massive meltdown
-    file_append((node_dir, "gpu_id"), 2765)
+    #cja:create a loop
+    for gpu_idx in range(options.gpu_num):
+        node_dir = joinpath(topology_dir, f"nodes/{gpu_idx}")
+        remake_dir(node_dir)
 
-    gfx_dict = {
-        "gfx801": {"name": "Carrizo\n", "id": 39028},
-        "gfx902": {"name": "Raven\n", "id": 5597},
-    }
+        # must show valid kaveri gpu id or massive meltdown
+        file_append((node_dir, "gpu_id"), 2765)
 
-    # must have marketing name
-    file_append((node_dir, "name"), gfx_dict[options.gfx_version]["name"])
+        gfx_dict = {
+            "gfx801": {"name": "Carrizo\n", "id": 39028},
+            "gfx902": {"name": "Raven\n", "id": 5597},
+        }
 
-    mem_banks_cnt = 1
+        # must have marketing name
+        file_append((node_dir, "name"), gfx_dict[options.gfx_version]["name"])
 
-    # Should be the same as the render driver filename (dri/renderD<drm_num>)
-    drm_num = 128
+        mem_banks_cnt = 1
 
-    device_id = gfx_dict[options.gfx_version]["id"]
+        # Should be the same as the render driver filename (dri/renderD<drm_num>)
+        drm_num = 128+gpu_idx
 
-    # populate global node properties
-    # NOTE: SIMD count triggers a valid GPU agent creation
-    node_prop = (
-        f"cpu_cores_count {options.num_cpus}\n"
-        + f"simd_count {options.num_compute_units * options.simds_per_cu}\n"
-        + f"mem_banks_count {mem_banks_cnt}\n"
-        + "caches_count 0\n"
-        + "io_links_count 0\n"
-        + "cpu_core_id_base 16\n"
-        + "simd_id_base 2147483648\n"
-        + f"max_waves_per_simd {options.wfs_per_simd}\n"
-        + f"lds_size_in_kb {int(options.lds_size / 1024)}\n"
-        + "gds_size_in_kb 0\n"
-        + f"wave_front_size {options.wf_size}\n"
-        + "array_count 1\n"
-        + f"simd_arrays_per_engine {options.sa_per_complex}\n"
-        + f"cu_per_simd_array {options.cu_per_sa}\n"
-        + f"simd_per_cu {options.simds_per_cu}\n"
-        + "max_slots_scratch_cu 32\n"
-        + "vendor_id 4098\n"
-        + f"device_id {device_id}\n"
-        + "location_id 8\n"
-        + f"drm_render_minor {drm_num}\n"
-        + f"max_engine_clk_fcompute {int(toFrequency(options.gpu_clock) / 1000000.0)}\n"
-        + "local_mem_size 0\n"
-        + "fw_version 699\n"
-        + "capability 4738\n"
-        + f"max_engine_clk_ccompute {int(toFrequency(options.CPUClock) / 1000000.0)}\n"
-    )
+        device_id = gfx_dict[options.gfx_version]["id"]
 
-    file_append((node_dir, "properties"), node_prop)
-
-    for i in range(mem_banks_cnt):
-        mem_dir = joinpath(node_dir, f"mem_banks/{i}")
-        remake_dir(mem_dir)
-
-        # Heap type value taken from real system, heap type values:
-        # https://github.com/RadeonOpenCompute/ROCT-Thunk-Interface/blob/roc-4.0.x/include/hsakmttypes.h#L317
-        mem_prop = (
-            f"heap_type 0\n"
-            + f"size_in_bytes {toMemorySize(options.mem_size)}"
-            + f"flags 0\n"
-            + f"width 64\n"
-            + f"mem_clk_max 1600\n"
+        # populate global node properties
+        # NOTE: SIMD count triggers a valid GPU agent creation
+        node_prop = (
+            f"cpu_cores_count {options.num_cpus}\n"
+            + f"simd_count {options.num_compute_units * options.simds_per_cu}\n"
+            + f"mem_banks_count {mem_banks_cnt}\n"
+            + "caches_count 0\n"
+            + "io_links_count 0\n"
+            + "cpu_core_id_base 16\n"
+            + "simd_id_base 2147483648\n"
+            + f"max_waves_per_simd {options.wfs_per_simd}\n"
+            + f"lds_size_in_kb {int(options.lds_size / 1024)}\n"
+            + "gds_size_in_kb 0\n"
+            + f"wave_front_size {options.wf_size}\n"
+            + "array_count 1\n"
+            + f"simd_arrays_per_engine {options.sa_per_complex}\n"
+            + f"cu_per_simd_array {options.cu_per_sa}\n"
+            + f"simd_per_cu {options.simds_per_cu}\n"
+            + "max_slots_scratch_cu 32\n"
+            + "vendor_id 4098\n"
+            + f"device_id {device_id}\n"
+            + "location_id 8\n"
+            + f"drm_render_minor {drm_num}\n"
+            + f"max_engine_clk_fcompute {int(toFrequency(options.gpu_clock) / 1000000.0)}\n"
+            + "local_mem_size 0\n"
+            + "fw_version 699\n"
+            + "capability 4738\n"
+            + f"max_engine_clk_ccompute {int(toFrequency(options.CPUClock) / 1000000.0)}\n"
         )
-        file_append((mem_dir, "properties"), mem_prop)
+
+        file_append((node_dir, "properties"), node_prop)
+
+        for i in range(mem_banks_cnt):
+            mem_dir = joinpath(node_dir, f"mem_banks/{i}")
+            remake_dir(mem_dir)
+
+            # Heap type value taken from real system, heap type values:
+            # https://github.com/RadeonOpenCompute/ROCT-Thunk-Interface/blob/roc-4.0.x/include/hsakmttypes.h#L317
+            mem_prop = (
+                f"heap_type 0\n"
+                + f"size_in_bytes {toMemorySize(options.mem_size)}"
+                + f"flags 0\n"
+                + f"width 64\n"
+                + f"mem_clk_max 1600\n"
+            )
+            file_append((mem_dir, "properties"), mem_prop)

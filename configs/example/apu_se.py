@@ -441,7 +441,7 @@ for i in range(args.num_gpu):
             voltage_domain=VoltageDomain(voltage=args.gpu_voltage),
         ),
     )
-    shader_list.append(shader);
+    shader_list.append(shader)
 
 # VIPER GPU protocol implements release consistency at GPU side. So,
 # we make their writes visible to the global memory and should read

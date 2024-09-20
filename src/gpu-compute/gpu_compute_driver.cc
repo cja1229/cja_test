@@ -155,6 +155,16 @@ GPUComputeDriver::mmap(ThreadContext *tc, Addr start, uint64_t length,
  * (4096 bytes) for doorbells, so check if this queueID can
  * be mapped into that page.
  */
+
+// cja:定义哈希表来存储队列ID和GPU信息的映射
+std::unordered_map<uint32_t, QueueInfo> queueMap;
+
+struct QueueInfo {
+    uint32_t gpuID;
+    Addr doorbellOffset;
+    // 其他相关信息
+};
+//
 void
 GPUComputeDriver::allocateQueue(PortProxy &mem_proxy, Addr ioc_buf)
 {

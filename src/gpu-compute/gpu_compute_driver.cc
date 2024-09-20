@@ -176,13 +176,19 @@ GPUComputeDriver::allocateQueue(PortProxy &mem_proxy, Addr ioc_buf)
     }
 
     args->doorbell_offset = (KFD_MMAP_TYPE_DOORBELL |
-        KFD_MMAP_GPU_ID(args->gpu_id)) << PAGE_SHIFT;
+        KFD_MMAP_GPU_ID(dGPUPoolID)) << PAGE_SHIFT;
 
     // for vega offset needs to include exact value of doorbell
     if (doorbellSize())
         args->doorbell_offset += queueId * doorbellSize();
 
     args->queue_id = queueId++;
+    //初始化info并将其存入Hashtable
+    QueueInfo info;
+    info.gpuID = dGPUPoolID;
+    info.doorbellOffset = args->doorbell_offset;
+    queueMap[args->queue_id] = info;
+
     auto &hsa_pp = device->hsaPacketProc();
     hsa_pp.setDeviceQueueDesc(args->read_pointer_address,
                               args->ring_base_address, args->queue_id,

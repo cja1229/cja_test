@@ -118,8 +118,9 @@ GPUComputeDriver::mmap(ThreadContext *tc, Addr start, uint64_t length,
 
     switch(mmap_type) {
         case KFD_MMAP_TYPE_DOORBELL:
-            DPRINTF(GPUDriver, "amdkfd mmap type DOORBELL offset\n");
+            DPRINTF(GPUDriver, "amdkfd mmap type DOORBELL offset for GPU %d\n",dGPUPoolID);
             start = mem_state->extendMmap(length);
+            Addr doorbell_offset = device->hsaPacketProc().pioAddr + dGPUPoolID * doorbellSize();
             process->pTable->map(start, device->hsaPacketProc().pioAddr,
                     length, false);
             break;
@@ -137,7 +138,7 @@ GPUComputeDriver::mmap(ThreadContext *tc, Addr start, uint64_t length,
              */
             if (!eventPage) {
                 eventPage = mem_state->extendMmap(length);
-                start = eventPage;
+                start = eventPage + dGPUPoolID * PAGE_SIZE;
             }
             break;
         default:
@@ -253,7 +254,7 @@ GPUComputeDriver::ioctl(ThreadContext *tc, unsigned req, Addr ioc_buf)
     switch (req) {
         case AMDKFD_IOC_GET_VERSION:
           {
-            DPRINTF(GPUDriver, "ioctl: AMDKFD_IOC_GET_VERSION\n");
+            DPRINTF(GPUDriver, "GPU %d ioctl: AMDKFD_IOC_GET_VERSION\n", dGPUPoolID);
 
             TypedBufferArg<kfd_ioctl_get_version_args> args(ioc_buf);
             args->major_version = KFD_IOCTL_MAJOR_VERSION;
@@ -264,19 +265,19 @@ GPUComputeDriver::ioctl(ThreadContext *tc, unsigned req, Addr ioc_buf)
           break;
         case AMDKFD_IOC_CREATE_QUEUE:
           {
-            DPRINTF(GPUDriver, "ioctl: AMDKFD_IOC_CREATE_QUEUE\n");
+            DPRINTF(GPUDriver, "GPU %d ioctl: AMDKFD_IOC_CREATE_QUEUE\n", dGPUPoolID);
 
             allocateQueue(virt_proxy, ioc_buf);
 
-            DPRINTF(GPUDriver, "Creating queue %d\n", queueId);
+            DPRINTF(GPUDriver, "GPU %d Creating queue %d\n", dGPUPoolID, queueId);
           }
           break;
         case AMDKFD_IOC_DESTROY_QUEUE:
           {
             TypedBufferArg<kfd_ioctl_destroy_queue_args> args(ioc_buf);
             args.copyIn(virt_proxy);
-            DPRINTF(GPUDriver, "ioctl: AMDKFD_IOC_DESTROY_QUEUE;" \
-                    "queue offset %d\n", args->queue_id);
+            DPRINTF(GPUDriver, "GPU %d ioctl: AMDKFD_IOC_DESTROY_QUEUE;" \
+                    "queue offset %d\n", dGPUPoolID, args->queue_id);
             device->hsaPacketProc().unsetDeviceQueueDesc(args->queue_id,
                                                          doorbellSize());
           }

@@ -471,7 +471,7 @@ def createCarrizoTopology(options):
     # TODO: Just the bare minimum to pass for now
 
     #cja:create a loop
-    for gpu_idx in range(options.gpu_num):
+    for gpu_idx in range(options.num_gpu):
         node_dir = joinpath(topology_dir, f"nodes/{gpu_idx}")
         remake_dir(node_dir)
 

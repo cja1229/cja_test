@@ -120,7 +120,7 @@ GPUComputeDriver::mmap(ThreadContext *tc, Addr start, uint64_t length,
         case KFD_MMAP_TYPE_DOORBELL:
             DPRINTF(GPUDriver, "amdkfd mmap type DOORBELL offset for GPU %d\n",dGPUPoolID);
             start = mem_state->extendMmap(length);
-            Addr doorbell_offset = device->hsaPacketProc().pioAddr + dGPUPoolID * doorbellSize();
+            //Addr doorbell_mmap_offset = device->hsaPacketProc().pioAddr + dGPUPoolID * doorbellSize();
             process->pTable->map(start, device->hsaPacketProc().pioAddr,
                     length, false);
             break;
@@ -158,13 +158,15 @@ GPUComputeDriver::mmap(ThreadContext *tc, Addr start, uint64_t length,
  */
 
 // cja:定义哈希表来存储队列ID和GPU信息的映射
-std::unordered_map<uint32_t, QueueInfo> queueMap;
-
 struct QueueInfo {
     uint32_t gpuID;
     Addr doorbellOffset;
     // 其他相关信息
 };
+
+std::unordered_map<uint32_t, QueueInfo> queueMap;
+
+
 //
 void
 GPUComputeDriver::allocateQueue(PortProxy &mem_proxy, Addr ioc_buf)
